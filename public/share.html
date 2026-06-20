@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#08111f" />
+  <title>Steam Key Share</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260620-1" />
+  <link rel="icon" type="image/png" href="/favicon.png?v=20260620-1" />
+  <link rel="apple-touch-icon" href="/icon-512.png?v=20260620-1" />
+  <link rel="stylesheet" href="/style.css?v=20260620-1" />
+</head>
+<body>
+  <div class="scene" aria-hidden="true">
+    <span class="scene-grid"></span>
+    <span class="scene-light scene-light-a"></span>
+    <span class="scene-light scene-light-b"></span>
+  </div>
+
+  <main class="share-shell">
+    <section class="share-card">
+      <div class="brand brand-auth">
+        <img class="brand-logo" src="/logo.svg?v=20260620-1" alt="" />
+        <span>Steam Key Vault</span>
+      </div>
+      <p id="share-status" class="kicker">Share</p>
+      <h1 id="share-title">Lade Key...</h1>
+      <p id="share-meta" class="summary">Dieser Link ist öffentlich, aber kryptisch.</p>
+
+      <div id="share-key" class="share-key">•••••-•••••-•••••</div>
+      <div class="detail-actions">
+        <button id="share-copy-key" class="btn btn-primary" type="button">Schlüssel kopieren</button>
+        <a id="share-redeem" class="btn btn-muted" target="_blank" rel="noopener noreferrer">Einlösen</a>
+        <a id="share-steam" class="btn btn-muted" target="_blank" rel="noopener noreferrer">Steam</a>
+        <a id="share-steamdb" class="btn btn-muted" target="_blank" rel="noopener noreferrer">SteamDB</a>
+      </div>
+      <p id="share-error" class="auth-message" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/share.js?v=20260620-1"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+# docker-compose.yml
+# Full stack: Python backend plus Nginx reverse proxy.
+# After start: http://<zima-ip>:8080
+
+services:
+  steam-keys:
+    build:
+      context: .
+      dockerfile: python/Dockerfile
+    container_name: steam-keys
+    restart: unless-stopped
+    working_dir: /app
+
+    volumes:
+      - ./data:/app/data
+
+    environment:
+      - CSV_PATH=/app/data/keys.csv
+      - USERS_PATH=/app/data/users.json
+      - REACTIVATION_REQUESTS_PATH=/app/data/reactivation-requests.json
+      - PASSWORD_RESET_REQUESTS_PATH=/app/data/password-reset-requests.json
+      - SESSION_SECRET_FILE=/app/data/session-secret.txt
+      - PUBLIC_DIR=/app/public
+      - PORT=3000
+
+    expose:
+      - "3000"
+
+    networks:
+      - vault
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  nginx:
+    image: nginx:alpine
+    container_name: steam-keys-nginx
+    restart: unless-stopped
+    depends_on:
+      - steam-keys
+
+    volumes:
+      - ./nginx:/etc/nginx/conf.d:ro
+
+    ports:
+      - "8080:80"
+
+    networks:
+      - vault
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+networks:
+  vault:
+    driver: bridge

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Ish KeyVault">
+  <defs>
+    <linearGradient id="keyBody" x1="50" y1="46" x2="218" y2="216" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#9be8ff"/>
+      <stop offset=".5" stop-color="#66c0f4"/>
+      <stop offset="1" stop-color="#2f8fe8"/>
+    </linearGradient>
+    <linearGradient id="keyShade" x1="62" y1="58" x2="170" y2="170" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".92"/>
+      <stop offset=".45" stop-color="#ffffff" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#07101d" stop-opacity=".22"/>
+    </linearGradient>
+    <filter id="softGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#66c0f4" flood-opacity=".35"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#softGlow)">
+    <path fill="url(#keyBody)" d="M89 44a59 59 0 0 1 58 68l68 68v29h-31v24h-28v-24h-26l-31-31a59 59 0 1 1-10-134Zm0 37a22 22 0 1 0 0 44 22 22 0 0 0 0-44Z"/>
+    <path fill="url(#keyShade)" d="M89 53a50 50 0 0 1 49 58l-1 6 69 69v14h-31v24h-10v-24h-31l-33-33-7 2A50 50 0 1 1 89 53Zm0 27a23 23 0 1 0 0 46 23 23 0 0 0 0-46Z" opacity=".55"/>
+
+    <circle cx="72" cy="80" r="11" fill="#07101d" opacity=".72"/>
+    <circle cx="109" cy="100" r="8" fill="#07101d" opacity=".62"/>
+    <circle cx="84" cy="119" r="7" fill="#07101d" opacity=".58"/>
+    <path d="M72 80l37 20-25 19" fill="none" stroke="#07101d" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity=".55"/>
+    <path d="M127 139l48 48" fill="none" stroke="#dff7ff" stroke-width="10" stroke-linecap="round" opacity=".46"/>
+  </g>
+</svg>

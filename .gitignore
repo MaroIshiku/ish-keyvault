@@ -1,0 +1,7 @@
+nodejs/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/*.json
+data/session-secret.txt
+data/*.tmp

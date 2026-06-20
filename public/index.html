@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#08111f" />
+  <title>Steam Key Vault</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260620-1" />
+  <link rel="icon" type="image/png" href="/favicon.png?v=20260620-1" />
+  <link rel="apple-touch-icon" href="/icon-512.png?v=20260620-1" />
+  <link rel="stylesheet" href="/style.css?v=20260620-1" />
+</head>
+<body>
+  <div class="scene" aria-hidden="true">
+    <span class="scene-grid"></span>
+    <span class="scene-light scene-light-a"></span>
+    <span class="scene-light scene-light-b"></span>
+  </div>
+
+  <main id="auth-view" class="auth-shell" hidden>
+    <section class="auth-panel">
+      <div class="brand brand-auth">
+        <img class="brand-logo" src="/logo.svg?v=20260620-1" alt="" />
+        <span>Steam Key Vault</span>
+      </div>
+      <p class="auth-kicker">Geschützter Zugriff</p>
+      <h1 id="auth-title">Einloggen</h1>
+      <p id="auth-copy" class="auth-copy">Melde dich an, um die gemeinsame Key-Liste zu sehen.</p>
+
+      <form id="auth-form" class="auth-form" autocomplete="on">
+        <label>
+          <span>Nutzername</span>
+          <input id="auth-username" name="username" type="text" inputmode="text" autocomplete="username" required minlength="3" maxlength="32" />
+        </label>
+        <label>
+          <span>Passwort</span>
+          <input id="auth-password" name="password" type="password" autocomplete="current-password" required minlength="10" />
+        </label>
+        <button id="auth-submit" class="btn btn-primary" type="submit">Einloggen</button>
+      </form>
+
+      <p id="auth-message" class="auth-message" role="status" aria-live="polite"></p>
+      <div class="auth-links">
+        <button id="auth-switch" class="link-button" type="button">Noch keinen Zugang? Registrieren</button>
+        <button id="password-reset-request" class="link-button" type="button">Passwort vergessen?</button>
+      </div>
+    </section>
+  </main>
+
+  <div id="app-view" class="app" hidden>
+    <header class="topbar">
+      <div class="brand">
+        <img class="brand-logo" src="/logo.svg?v=20260620-1" alt="" />
+        <span>Vault</span>
+      </div>
+      <div class="top-actions">
+        <button id="new-key" class="btn btn-muted" type="button" hidden>Neuer Key</button>
+        <button id="admin-open" class="icon-button notification-button" type="button" hidden title="Notifications" aria-label="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span id="notification-dot" class="notification-dot" hidden></span>
+          <span id="pending-badge" class="badge notification-badge" hidden>0</span>
+        </button>
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="Theme wechseln" title="Theme wechseln">
+          <svg class="theme-icon theme-icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          <svg class="theme-icon theme-icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6.5 6.5 0 0 0 8.8 8.8 9 9 0 1 1-8.8-8.8Z"/></svg>
+        </button>
+        <span id="user-pill" class="user-pill"></span>
+        <button id="logout" class="icon-button" type="button" aria-label="Ausloggen" title="Ausloggen">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <p class="kicker">Gemeinsame Liste</p>
+          <h1>Steam Keys</h1>
+          <p id="hero-sub" class="summary">- verfügbar · - eingelöst · - insgesamt</p>
+        </div>
+        <div class="toolbar">
+          <label class="search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input id="search" type="search" placeholder="Spiel suchen" autocomplete="off" spellcheck="false" />
+          </label>
+          <div class="segmented" role="tablist" aria-label="Statusfilter">
+            <button class="seg-btn is-active" type="button" data-filter="all">All <span data-count="all">0</span></button>
+            <button class="seg-btn" type="button" data-filter="available">Free <span data-count="available">0</span></button>
+            <button class="seg-btn" type="button" data-filter="claimed">Used <span data-count="claimed">0</span></button>
+          </div>
+          <select id="sort" class="select" aria-label="Sortierung">
+            <option value="name-asc">Name A-Z</option>
+            <option value="name-desc">Name Z-A</option>
+            <option value="added-desc">Neueste zuerst</option>
+            <option value="status-available">Freie zuerst</option>
+            <option value="status-claimed">Verbrauchte zuerst</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-head" aria-hidden="true">
+        <span>#</span>
+        <span>Spiel</span>
+        <span>Schlüssel</span>
+        <span>Status</span>
+        <span></span>
+      </div>
+      <ul id="rows" class="rows">
+        <li class="placeholder">Lade Vault...</li>
+      </ul>
+    </section>
+  </div>
+
+  <section id="admin-panel" class="modal" hidden>
+    <div class="modal-backdrop" data-modal-close></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="admin-title">
+      <div class="modal-head">
+        <div>
+          <p class="kicker">Admin</p>
+          <h2 id="admin-title">Notifications</h2>
+        </div>
+        <button class="icon-button" type="button" data-modal-close aria-label="Schließen" title="Schließen">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="admin-users" class="admin-users"></div>
+    </div>
+  </section>
+
+  <section id="detail-panel" class="detail-popover" hidden>
+    <div class="modal-backdrop" data-detail-close></div>
+    <div class="detail-card" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+      <div class="detail-head">
+        <div>
+          <p id="detail-status" class="kicker">Key</p>
+          <h2 id="detail-title">Eintrag</h2>
+        </div>
+        <button class="icon-button" type="button" data-detail-close aria-label="Schließen" title="Schließen">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
+        </button>
+      </div>
+
+      <form id="key-form" class="key-form">
+        <label>
+          <span>Spiel</span>
+          <input id="detail-game" name="game" type="text" maxlength="180" required />
+        </label>
+        <label>
+          <span>Schlüssel</span>
+          <div class="key-input-row">
+            <input id="detail-key" name="key" type="password" maxlength="140" required />
+            <button id="detail-reveal" class="btn btn-muted" type="button">Anzeigen</button>
+          </div>
+        </label>
+        <label class="admin-only-field">
+          <span>Hinzugefügt</span>
+          <input id="detail-added" name="addedAt" type="datetime-local" />
+        </label>
+        <label class="admin-only-field">
+          <span>Eingelöst</span>
+          <input id="detail-redeemed" name="redeemedAt" type="datetime-local" />
+        </label>
+
+        <div class="detail-actions">
+          <button id="detail-redeem" class="btn btn-primary" type="button">Einlösen</button>
+          <button id="detail-share" class="btn btn-muted" type="button">Teilen</button>
+          <button id="detail-copy" class="btn btn-muted" type="button">Kopieren</button>
+          <button id="detail-request-reactivation" class="btn btn-muted" type="button">Reaktivierung anfragen</button>
+          <a id="detail-steam" class="btn btn-muted" target="_blank" rel="noopener noreferrer">Steam</a>
+          <a id="detail-steamdb" class="btn btn-muted" target="_blank" rel="noopener noreferrer">SteamDB</a>
+        </div>
+
+        <div id="share-link-row" class="share-link-row" hidden>
+          <input id="detail-share-link" type="text" readonly aria-label="Share-Link" />
+          <button id="detail-share-copy" class="btn btn-primary" type="button">Copy Link</button>
+        </div>
+
+        <div class="admin-edit-actions">
+          <button id="detail-save" class="btn btn-primary" type="submit">Speichern</button>
+          <button id="detail-unredeem" class="btn btn-muted" type="button">Reaktivieren</button>
+          <button id="detail-delete" class="btn btn-danger" type="button">Löschen</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="/script.js?v=20260620-1"></script>
+</body>
+</html>

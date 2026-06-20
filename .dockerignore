@@ -1,0 +1,7 @@
+nodejs
+data/*.json
+data/session-secret.txt
+__pycache__
+*.pyc
+.git
+.gitignore

@@ -1,0 +1,69 @@
+const token = decodeURIComponent(window.location.pathname.split("/").filter(Boolean).pop() || "");
+const title = document.querySelector("#share-title");
+const statusText = document.querySelector("#share-status");
+const meta = document.querySelector("#share-meta");
+const keyBox = document.querySelector("#share-key");
+const copyButton = document.querySelector("#share-copy-key");
+const redeemLink = document.querySelector("#share-redeem");
+const steamLink = document.querySelector("#share-steam");
+const steamDbLink = document.querySelector("#share-steamdb");
+const errorBox = document.querySelector("#share-error");
+const toast = document.querySelector("#toast");
+
+let sharedKey = "";
+
+function showToast(message, kind = "default") {
+  toast.textContent = message;
+  toast.className = `toast is-visible ${kind === "error" ? "is-error" : ""} ${kind === "success" ? "is-success" : ""}`;
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(() => toast.classList.remove("is-visible"), 3000);
+}
+
+function formatDate(iso) {
+  if (!iso) return "";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+async function copy(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast("Schlüssel kopiert", "success");
+  } catch (_) {
+    showToast(text, "success");
+  }
+}
+
+async function loadShare() {
+  try {
+    const response = await fetch(`/api/share/${encodeURIComponent(token)}`, { cache: "no-store" });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "Share-Link nicht gefunden");
+    sharedKey = data.key;
+    title.textContent = data.game || "Steam Key";
+    statusText.textContent = data.redeemed ? "Bereits verbraucht" : "Verfügbar";
+    meta.textContent = data.redeemed && data.redeemedAt
+      ? `Eingelöst am ${formatDate(data.redeemedAt)}`
+      : "Öffentlicher Key-Link";
+    keyBox.textContent = data.key;
+    redeemLink.href = data.redeemUrl;
+    steamLink.href = data.steamUrl;
+    steamDbLink.href = data.steamDbUrl;
+  } catch (error) {
+    title.textContent = "Share-Link ungültig";
+    keyBox.textContent = "Nicht gefunden";
+    errorBox.textContent = error.message;
+    copyButton.disabled = true;
+    [redeemLink, steamLink, steamDbLink].forEach((link) => {
+      link.removeAttribute("href");
+      link.setAttribute("aria-disabled", "true");
+    });
+  }
+}
+
+copyButton.addEventListener("click", () => {
+  if (sharedKey) copy(sharedKey);
+});
+
+loadShare();
