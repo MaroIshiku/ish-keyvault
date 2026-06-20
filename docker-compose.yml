@@ -1,16 +1,19 @@
-# docker-compose.yml
-# Full stack: Python backend plus Nginx reverse proxy.
-# After start: http://<zima-ip>:8080
+# ZimaOS optimized compose.
+# No local build, no relative bind paths: ZimaOS only pulls GHCR and stores data below /DATA/AppData.
 
 services:
-  steam-keys:
+  ish-keyvault:
     image: ghcr.io/maroishiku/ish-keyvault:latest
-    container_name: steam-keys
+    container_name: ish-keyvault
     restart: unless-stopped
-    working_dir: /app
+    pull_policy: always
+    init: true
+
+    ports:
+      - "8080:3000"
 
     volumes:
-      - ./data:/app/data
+      - /DATA/AppData/ish-keyvault/data:/app/data
 
     environment:
       - CSV_PATH=/app/data/keys.csv
@@ -21,40 +24,15 @@ services:
       - PUBLIC_DIR=/app/public
       - PORT=3000
 
-    expose:
-      - "3000"
-
-    networks:
-      - vault
-
-    logging:
-      driver: json-file
-      options:
-        max-size: "5m"
-        max-file: "3"
-
-  nginx:
-    image: nginx:alpine
-    container_name: steam-keys-nginx
-    restart: unless-stopped
-    depends_on:
-      - steam-keys
-
-    volumes:
-      - ./nginx:/etc/nginx/conf.d:ro
-
-    ports:
-      - "8080:80"
-
-    networks:
-      - vault
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/api/auth/me', timeout=3).read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
     logging:
       driver: json-file
       options:
         max-size: "5m"
         max-file: "3"
-
-networks:
-  vault:
-    driver: bridge

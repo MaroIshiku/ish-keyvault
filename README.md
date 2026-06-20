@@ -18,8 +18,6 @@ Self-hosted Steam-Key-Vault fuer Docker/ZimaOS. Die App nutzt eine kleine Python
 ```text
 ish-keyvault/
 ├── docker-compose.yml
-├── nginx/
-│   └── default.conf
 ├── python/
 │   ├── app.py
 │   ├── Dockerfile
@@ -52,8 +50,15 @@ Dead Cells,DDDDD-EEEEE-FFFFF,,
 
 ## Start auf ZimaOS / Docker
 
+Die Compose-Datei ist fuer ZimaOS optimiert:
+
+- kein lokaler Build auf dem ZimaOS Host
+- keine relativen Bind-Pfade
+- App-Daten persistent unter `/DATA/AppData/ish-keyvault/data`
+- Image wird aus GHCR gezogen
+
 ```bash
-cd /DATA/AppData/ish-keyvault
+mkdir -p /DATA/AppData/ish-keyvault/data
 docker compose pull
 docker compose up -d
 ```
@@ -64,7 +69,7 @@ Aufruf:
 http://<zima-ip>:8080
 ```
 
-Wenn ein HTTPS-Host oder Reverse Proxy davor sitzt, leite ihn auf `http://<zima-ip>:8080` weiter. Nginx reicht `X-Forwarded-Proto` an Flask weiter, damit Secure-Cookies bei HTTPS korrekt funktionieren.
+Wenn ein HTTPS-Host oder Reverse Proxy davor sitzt, leite ihn auf `http://<zima-ip>:8080` weiter. Die App respektiert `X-Forwarded-Proto`, damit Secure-Cookies bei HTTPS korrekt funktionieren.
 
 Das Compose-File nutzt das fertige GHCR-Image:
 
