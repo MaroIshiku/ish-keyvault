@@ -45,6 +45,7 @@ const detailGame = $("#detail-game");
 const detailKey = $("#detail-key");
 const detailAdded = $("#detail-added");
 const detailRedeemed = $("#detail-redeemed");
+const detailRedeemedBy = $("#detail-redeemed-by");
 const detailReveal = $("#detail-reveal");
 const detailRedeem = $("#detail-redeem");
 const detailShare = $("#detail-share");
@@ -76,6 +77,7 @@ const requiredElements = {
   settingsBody,
   detailPanel,
   keyForm,
+  detailRedeemedBy,
   detailShareLink,
   detailShareCopy,
 };
@@ -103,7 +105,7 @@ let authMode = "login";
 let currentUser = null;
 let allKeys = [];
 let filterQuery = "";
-let statusFilter = "all";
+let statusFilter = "available";
 let sortMode = "name-asc";
 let pendingCount = 0;
 let activeIndex = null;
@@ -373,8 +375,9 @@ function renderKeys() {
   rows.innerHTML = visible.map((entry) => {
     const status = entry.redeemed ? "Used" : "Free";
     const statusClass = entry.redeemed ? "is-claimed" : "is-free";
+    const redeemedBy = entry.redeemedByName ? ` by ${entry.redeemedByName}` : "";
     const dateLine = entry.redeemed && entry.redeemedAt
-      ? `redeemed ${formatDate(entry.redeemedAt)}`
+      ? `redeemed ${formatDate(entry.redeemedAt)}${redeemedBy}`
       : (entry.addedAt ? `added ${formatDate(entry.addedAt)}` : "");
     const action = entry.redeemed
       ? `<button class="btn btn-muted" type="button" data-open="${entry.index}">Open</button>`
@@ -468,6 +471,7 @@ function setDetailReadonly(readonly) {
   detailKey.readOnly = readonly;
   detailAdded.disabled = readonly;
   detailRedeemed.disabled = readonly;
+  detailRedeemedBy.disabled = readonly;
   $$(".admin-only-field, .admin-edit-actions").forEach((element) => {
     element.hidden = !currentUser || currentUser.role !== "admin";
   });
@@ -484,6 +488,7 @@ function openNewKey() {
   detailKey.type = "text";
   detailAdded.value = toDateTimeLocal(new Date().toISOString());
   detailRedeemed.value = "";
+  detailRedeemedBy.value = "";
   detailRedeem.hidden = true;
   detailUnredeem.hidden = true;
   detailDelete.hidden = true;
@@ -513,6 +518,7 @@ function openDetail(index) {
   detailKey.type = "password";
   detailAdded.value = toDateTimeLocal(entry.addedAt);
   detailRedeemed.value = toDateTimeLocal(entry.redeemedAt);
+  detailRedeemedBy.value = entry.redeemedByName || (entry.redeemed ? "Unknown" : "");
   detailReveal.textContent = "Reveal";
   detailRedeem.hidden = entry.redeemed;
   detailUnredeem.hidden = !entry.redeemed;

@@ -90,8 +90,8 @@
             <input id="search" type="search" placeholder="Search game" autocomplete="off" spellcheck="false" />
           </label>
           <div class="segmented" role="tablist" aria-label="Status filter">
-            <button class="seg-btn is-active" type="button" data-filter="all">All <span data-count="all">0</span></button>
-            <button class="seg-btn" type="button" data-filter="available">Free <span data-count="available">0</span></button>
+            <button class="seg-btn" type="button" data-filter="all">All <span data-count="all">0</span></button>
+            <button class="seg-btn is-active" type="button" data-filter="available">Free <span data-count="available">0</span></button>
             <button class="seg-btn" type="button" data-filter="claimed">Used <span data-count="claimed">0</span></button>
           </div>
           <select id="sort" class="select" aria-label="Sort">
@@ -182,6 +182,10 @@
           <span>Redeemed</span>
           <input id="detail-redeemed" name="redeemedAt" type="datetime-local" />
         </label>
+        <label class="admin-only-field">
+          <span>Redeemed by</span>
+          <input id="detail-redeemed-by" name="redeemedBy" type="text" readonly />
+        </label>
 
         <div class="detail-actions">
           <button id="detail-redeem" class="btn btn-primary" type="button">Redeem</button>
@@ -207,6 +211,6 @@
   </section>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="/script.js?v=20260620-3"></script>
+  <script src="/script.js?v=20260620-4"></script>
 </body>
 </html>

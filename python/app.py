@@ -235,7 +235,7 @@ def require_admin():
 def ensure_csv():
     ensure_dir(DATA_DIR)
     if not CSV_PATH.exists():
-        CSV_PATH.write_text("Game,Key,RedeemedAt,addedAt\n", encoding="utf-8")
+        CSV_PATH.write_text("Game,Key,RedeemedAt,addedAt,RedeemedBy,RedeemedByName\n", encoding="utf-8")
 
 
 def detect_delimiter(raw):
@@ -257,6 +257,8 @@ def read_keys():
             "key": str(record.get("Key") or record.get("key") or "").strip(),
             "redeemedAt": str(record.get("RedeemedAt") or record.get("redeemedAt") or record.get("redeemed_at") or record.get("Redeemed") or record.get("redeemed") or "").strip(),
             "addedAt": str(record.get("addedAt") or record.get("AddedAt") or record.get("added_at") or record.get("Added") or record.get("added") or "").strip(),
+            "redeemedBy": str(record.get("RedeemedBy") or record.get("redeemedBy") or record.get("redeemed_by") or "").strip(),
+            "redeemedByName": str(record.get("RedeemedByName") or record.get("redeemedByName") or record.get("redeemed_by_name") or record.get("RedeemedUser") or record.get("redeemedUser") or "").strip(),
         })
     return keys
 
@@ -267,14 +269,16 @@ def write_keys(keys):
     if CSV_PATH.exists():
         delimiter = detect_delimiter(CSV_PATH.read_text(encoding="utf-8-sig"))
     output = tempfile.SpooledTemporaryFile(mode="w+", encoding="utf-8", newline="")
-    writer = csv.DictWriter(output, fieldnames=["game", "key", "redeemedAt", "addedAt"], delimiter=delimiter)
-    output.write(delimiter.join(["Game", "Key", "RedeemedAt", "addedAt"]) + "\n")
+    writer = csv.DictWriter(output, fieldnames=["game", "key", "redeemedAt", "addedAt", "redeemedBy", "redeemedByName"], delimiter=delimiter)
+    output.write(delimiter.join(["Game", "Key", "RedeemedAt", "addedAt", "RedeemedBy", "RedeemedByName"]) + "\n")
     for entry in keys:
         writer.writerow({
             "game": entry.get("game", ""),
             "key": entry.get("key", ""),
             "redeemedAt": entry.get("redeemedAt", ""),
             "addedAt": entry.get("addedAt", ""),
+            "redeemedBy": entry.get("redeemedBy", "") if entry.get("redeemedAt") else "",
+            "redeemedByName": entry.get("redeemedByName", "") if entry.get("redeemedAt") else "",
         })
     output.seek(0)
     atomic_write(CSV_PATH, output.read())
@@ -283,11 +287,14 @@ def write_keys(keys):
 
 def clean_key_entry(data, existing=None):
     existing = existing or {}
+    redeemed_at = str(data.get("redeemedAt", existing.get("redeemedAt", "")) or "").strip()
     return {
         "game": str(data.get("game", existing.get("game", "")) or "").strip(),
         "key": str(data.get("key", existing.get("key", "")) or "").strip(),
-        "redeemedAt": str(data.get("redeemedAt", existing.get("redeemedAt", "")) or "").strip(),
+        "redeemedAt": redeemed_at,
         "addedAt": str(data.get("addedAt", existing.get("addedAt", "")) or "").strip(),
+        "redeemedBy": str(existing.get("redeemedBy", "") or "").strip() if redeemed_at else "",
+        "redeemedByName": str(existing.get("redeemedByName", "") or "").strip() if redeemed_at else "",
     }
 
 
@@ -336,14 +343,18 @@ def public_base_url():
     return f"{proto.split(',')[0].strip()}://{host}"
 
 
-def public_key(entry, index):
-    return {
+def public_key(entry, index, include_audit=False):
+    item = {
         "index": index,
         "game": entry.get("game", ""),
         "redeemed": bool(entry.get("redeemedAt")),
         "redeemedAt": entry.get("redeemedAt") or None,
         "addedAt": entry.get("addedAt") or None,
     }
+    if include_audit:
+        item["redeemedBy"] = entry.get("redeemedBy") or None
+        item["redeemedByName"] = entry.get("redeemedByName") or None
+    return item
 
 
 def public_reactivation_request(req):
@@ -555,6 +566,8 @@ def admin_reactivate_used_keys():
         for entry in keys:
             if entry.get("redeemedAt"):
                 entry["redeemedAt"] = ""
+                entry["redeemedBy"] = ""
+                entry["redeemedByName"] = ""
                 changed += 1
         if changed:
             write_keys(keys)
@@ -678,7 +691,8 @@ def api_keys():
     user, error = require_auth()
     if error:
         return error
-    response = jsonify({"keys": [public_key(entry, index) for index, entry in enumerate(read_keys())]})
+    include_audit = user.get("role") == "admin"
+    response = jsonify({"keys": [public_key(entry, index, include_audit) for index, entry in enumerate(read_keys())]})
     response.headers["Cache-Control"] = "no-store"
     return response
 
@@ -760,14 +774,14 @@ def admin_reactivation_approve(request_id):
         index, entry = find_key_by_request(keys, req)
         if entry is None:
             return jsonify({"error": "Key for this request was not found"}), 404
-        keys[index] = {**entry, "redeemedAt": ""}
+        keys[index] = {**entry, "redeemedAt": "", "redeemedBy": "", "redeemedByName": ""}
         req["status"] = "approved"
         req["resolvedAt"] = now_iso()
         req["resolvedBy"] = admin["id"]
         req["resolvedIndex"] = index
         write_keys(keys)
         write_reactivation_requests(data)
-    return jsonify({"ok": True, "request": public_reactivation_request(req), "key": public_key(keys[index], index)})
+    return jsonify({"ok": True, "request": public_reactivation_request(req), "key": public_key(keys[index], index, True)})
 
 
 @app.post("/api/admin/reactivation-requests/<request_id>/reject")
@@ -853,9 +867,9 @@ def api_redeem(index):
         if not entry.get("key"):
             return jsonify({"error": "This row does not contain a key"}), 422
         redeemed_at = now_iso()
-        keys[index] = {**entry, "redeemedAt": redeemed_at}
+        keys[index] = {**entry, "redeemedAt": redeemed_at, "redeemedBy": user.get("id", ""), "redeemedByName": user.get("username", "")}
         write_keys(keys)
-    return jsonify({"ok": True, "game": entry.get("game"), "redeemedAt": redeemed_at, "redeemUrl": steam_redeem_url(entry.get("key"))})
+    return jsonify({"ok": True, "game": entry.get("game"), "redeemedAt": redeemed_at, "redeemedByName": user.get("username"), "redeemUrl": steam_redeem_url(entry.get("key"))})
 
 
 @app.post("/api/unredeem/<int:index>")
@@ -870,7 +884,7 @@ def api_unredeem(index):
         entry = keys[index]
         if not entry.get("redeemedAt"):
             return jsonify({"error": "Key is not used"}), 409
-        keys[index] = {**entry, "redeemedAt": ""}
+        keys[index] = {**entry, "redeemedAt": "", "redeemedBy": "", "redeemedByName": ""}
         write_keys(keys)
     return jsonify({"ok": True, "index": index, "game": entry.get("game")})
 

@@ -42,12 +42,12 @@ ish-keyvault/
 `data/keys.csv` remains the persistent key list:
 
 ```csv
-Game,Key,RedeemedAt,addedAt
-Hollow Knight,AAAAA-BBBBB-CCCCC,,2026-01-01T00:00:00.000Z
-Dead Cells,DDDDD-EEEEE-FFFFF,,
+Game,Key,RedeemedAt,addedAt,RedeemedBy,RedeemedByName
+Hollow Knight,AAAAA-BBBBB-CCCCC,,2026-01-01T00:00:00.000Z,,
+Dead Cells,DDDDD-EEEEE-FFFFF,2026-01-02T00:00:00.000Z,,user-id,alice
 ```
 
-`Game` and `Key` are required. Leave `RedeemedAt` empty when a key is free. The app sets the timestamp when a key is redeemed. `addedAt` is optional.
+`Game` and `Key` are required. Leave `RedeemedAt` empty when a key is free. The app sets the timestamp, `RedeemedBy`, and `RedeemedByName` when a key is redeemed. `addedAt` is optional.
 
 ## ZimaOS / Docker
 
