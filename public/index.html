@@ -1,216 +1,300 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="de" data-theme="lavender" data-mode="system" data-resolved-mode="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#08111f" />
-  <title>Steam Key Vault</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20260620-1" />
-  <link rel="icon" type="image/png" href="/favicon.png?v=20260620-1" />
-  <link rel="apple-touch-icon" href="/icon-512.png?v=20260620-1" />
-  <link rel="stylesheet" href="/style.css?v=20260620-3" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#FFFBFF" />
+  <meta name="application-name" content="Keyku - Key Vault" />
+  <meta name="apple-mobile-web-app-title" content="Keyku" />
+  <title>Keyku - Key Vault</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/icon-512.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="stylesheet" href="/design-system/components.css" />
+  <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <div class="scene" aria-hidden="true">
-    <span class="scene-grid"></span>
-    <span class="scene-light scene-light-a"></span>
-    <span class="scene-light scene-light-b"></span>
-  </div>
+  <div id="icon-sprite" aria-hidden="true"></div>
 
-  <main id="auth-view" class="auth-shell" hidden>
-    <section class="auth-panel">
-      <div class="brand brand-auth">
-        <img class="brand-logo" src="/logo.svg?v=20260620-1" alt="" />
-        <span>Steam Key Vault</span>
+  <main id="setup-error-view" class="psu-setup-screen" hidden>
+    <section class="psu-setup-error-window" role="alert">
+      <div class="psu-setup-brand">
+        <div class="psu-setup-logo" aria-hidden="true"><img src="/assets/logos/keyku.png" alt="" /></div>
+        <div>
+          <h1 class="psu-setup-title">Setup blockiert</h1>
+          <p id="setup-error-copy" class="psu-setup-subtitle">Setup-Secret fehlt.</p>
+        </div>
       </div>
-      <p class="auth-kicker">Protected access</p>
-      <h1 id="auth-title">Sign in</h1>
-      <p id="auth-copy" class="auth-copy">Sign in to access the shared key vault.</p>
-
-      <form id="auth-form" class="auth-form" autocomplete="on">
-        <label>
-          <span>Username</span>
-          <input id="auth-username" name="username" type="text" inputmode="text" autocomplete="username" required minlength="3" maxlength="32" />
-        </label>
-        <label>
-          <span>Password</span>
-          <input id="auth-password" name="password" type="password" autocomplete="current-password" required minlength="10" />
-        </label>
-        <button id="auth-submit" class="btn btn-primary" type="submit">Sign in</button>
-      </form>
-
-      <p id="auth-message" class="auth-message" role="status" aria-live="polite"></p>
-      <div class="auth-links">
-        <button id="auth-switch" class="link-button" type="button">Need access? Register</button>
-        <button id="password-reset-request" class="link-button" type="button">Forgot password?</button>
-      </div>
+      <section class="psu-technical-card">
+        <p class="psu-card-text">Benötigt wird <code id="setup-error-key">ISHIKU_SETUP_SECRET</code>.</p>
+      </section>
+      <button id="setup-retry" class="psu-button psu-button--filled psu-button--full" type="button">Erneut prüfen</button>
     </section>
   </main>
 
-  <div id="app-view" class="app" hidden>
-    <header class="topbar">
-      <div class="brand">
-        <img class="brand-logo" src="/logo.svg?v=20260620-1" alt="" />
-        <span>Vault</span>
+  <main id="setup-view" class="psu-setup-screen" hidden>
+    <section class="psu-register-window" role="dialog" aria-modal="true" aria-labelledby="setup-title">
+      <div class="psu-setup-brand">
+        <div class="psu-setup-logo" aria-hidden="true"><img src="/assets/logos/keyku.png" alt="" /></div>
+        <div>
+          <h1 id="setup-title" class="psu-setup-title">Admin einrichten</h1>
+          <p class="psu-setup-subtitle">Erstelle den ersten Adminaccount für Keyku.</p>
+        </div>
       </div>
-      <div class="top-actions">
-        <button id="new-key" class="btn btn-muted" type="button" hidden>New key</button>
-        <button id="admin-open" class="icon-button notification-button" type="button" hidden title="Notifications" aria-label="Notifications">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-          <span id="notification-dot" class="notification-dot" hidden></span>
-          <span id="pending-badge" class="badge notification-badge" hidden>0</span>
+
+      <form id="setup-form" class="psu-form-stack" data-app-id="keyku" data-app-name="Keyku - Key Vault">
+        <label class="psu-field">
+          <span class="psu-label">Setup-Secret</span>
+          <input id="setup-secret" class="psu-input" name="setup_secret" type="password" autocomplete="one-time-code" required aria-describedby="setup-secret-error" />
+          <span id="setup-secret-error" class="psu-field-error" data-field-error="setup_secret" hidden></span>
+        </label>
+        <label class="psu-field">
+          <span class="psu-label">Anzeigename</span>
+          <input class="psu-input" name="admin_display_name" autocomplete="name" required />
+        </label>
+        <label class="psu-field">
+          <span class="psu-label">Admin-Benutzername</span>
+          <input class="psu-input" name="admin_username" autocomplete="username" required minlength="3" maxlength="32" aria-describedby="setup-username-error" />
+          <span id="setup-username-error" class="psu-field-error" data-field-error="admin_username" hidden></span>
+        </label>
+        <label class="psu-field">
+          <span class="psu-label">E-Mail optional</span>
+          <input class="psu-input" name="admin_email" type="email" autocomplete="email" />
+        </label>
+        <label class="psu-field">
+          <span class="psu-label">Admin-Passwort</span>
+          <input class="psu-input" name="admin_password" type="password" autocomplete="new-password" required minlength="12" aria-describedby="setup-password-error password-rules" />
+          <span id="setup-password-error" class="psu-field-error" data-field-error="admin_password" hidden></span>
+        </label>
+        <label class="psu-field">
+          <span class="psu-label">Passwort wiederholen</span>
+          <input class="psu-input" name="admin_password_confirm" type="password" autocomplete="new-password" required minlength="12" aria-describedby="setup-confirm-error" />
+          <span id="setup-confirm-error" class="psu-field-error" data-field-error="admin_password_confirm" hidden></span>
+        </label>
+        <div id="password-rules" class="psu-password-requirements">
+          <strong>Passwortregeln</strong>
+          <ul>
+            <li>Mindestens 12 Zeichen.</li>
+            <li>Nicht identisch mit Setup-Secret, Benutzername oder App-Name.</li>
+            <li>Kein Platzhalter wie admin, password oder changeme.</li>
+          </ul>
+        </div>
+        <p id="setup-message" class="psu-field-error" role="status" aria-live="polite"></p>
+        <div class="psu-setup-actions">
+          <button id="setup-help-toggle" class="psu-button psu-button--text" type="button">Setup-Hilfe anzeigen</button>
+          <button id="setup-submit" class="psu-button psu-button--filled" type="submit">Adminaccount erstellen</button>
+        </div>
+        <section id="setup-help" class="psu-technical-card" hidden>
+          <p class="psu-card-text">Bevorzugt wird ein Docker-Secret unter <code>/run/secrets/ishiku_setup_secret</code>. Alternativ kann <code>ISHIKU_SETUP_SECRET</code> gesetzt werden.</p>
+        </section>
+        <p class="psu-setup-footnote">Nach dem Erstellen des Adminaccounts wird die Registrierung automatisch geschlossen.</p>
+      </form>
+    </section>
+  </main>
+
+  <main id="auth-view" class="psu-setup-screen" hidden>
+    <section class="psu-auth-window" role="dialog" aria-labelledby="auth-title">
+      <div class="psu-setup-brand">
+        <div class="psu-setup-logo" aria-hidden="true"><img src="/assets/logos/keyku.png" alt="" /></div>
+        <div>
+          <h1 id="auth-title" class="psu-setup-title">Anmelden</h1>
+          <p class="psu-setup-subtitle">Keyku - Key Vault</p>
+        </div>
+      </div>
+      <form id="auth-form" class="psu-form-stack">
+        <label class="psu-field">
+          <span class="psu-label">Benutzername</span>
+          <input id="auth-username" class="psu-input" name="username" autocomplete="username" required />
+        </label>
+        <label class="psu-field">
+          <span class="psu-label">Passwort</span>
+          <input id="auth-password" class="psu-input" name="password" type="password" autocomplete="current-password" required />
+        </label>
+        <p id="auth-message" class="psu-field-error" role="status" aria-live="polite"></p>
+        <div class="psu-setup-actions">
+          <button id="password-reset-request" class="psu-button psu-button--text" type="button">Passwort zurücksetzen</button>
+          <button id="auth-submit" class="psu-button psu-button--filled" type="submit">Anmelden</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <div id="app-view" class="psu-app-shell" hidden>
+    <header class="psu-app-header" data-psu-app-header>
+      <div class="psu-app-header__inner">
+        <div class="psu-app-symbol" aria-hidden="true">
+          <img data-psu-app-logo src="/assets/logos/keyku.png" alt="" />
+          <svg data-psu-fallback-symbol><use href="#psu-icon-key"></use></svg>
+        </div>
+        <div class="psu-app-title-stack">
+          <h1 class="psu-app-title" data-psu-app-name>Keyku - Key Vault</h1>
+          <p class="psu-app-subtitle" data-psu-app-subtitle>Steam-Keys sicher teilen</p>
+        </div>
+        <div class="psu-spacer"></div>
+        <button id="notifications-button" class="psu-icon-button keyku-admin-only" type="button" aria-label="Benachrichtigungen öffnen" data-psu-open="#notifications-sheet" hidden>
+          <svg><use href="#psu-icon-info"></use></svg>
+          <span id="notification-badge" class="keyku-badge" hidden>0</span>
         </button>
-        <button id="settings-open" class="icon-button" type="button" hidden title="Admin Settings" aria-label="Admin Settings">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.08V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.08-.4H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.08V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.2.36.49.65.85.85.25.14.54.22.84.22H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></svg>
-        </button>
-        <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle theme" title="Toggle theme">
-          <svg class="theme-icon theme-icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-          <svg class="theme-icon theme-icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6.5 6.5 0 0 0 8.8 8.8 9 9 0 1 1-8.8-8.8Z"/></svg>
-        </button>
-        <span id="user-pill" class="user-pill"></span>
-        <button id="logout" class="icon-button" type="button" aria-label="Sign out" title="Sign out">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-        </button>
+        <button id="profile-button" class="psu-avatar-button" type="button" aria-label="Profilmenü öffnen" data-psu-open="#profile-sheet">K</button>
       </div>
     </header>
 
-    <section class="panel">
-      <div class="panel-head">
+    <main class="psu-main keyku-main">
+      <section class="psu-hero-card keyku-hero">
         <div>
-          <p class="kicker">Shared vault</p>
-          <h1>Steam Keys</h1>
-          <p id="hero-sub" class="summary">- free - - used - - total</p>
+          <h2 class="psu-card-title">Key Vault</h2>
+          <p id="vault-summary" class="psu-card-text">Lade den Tresor...</p>
         </div>
-        <div class="toolbar">
-          <label class="search">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-            <input id="search" type="search" placeholder="Search game" autocomplete="off" spellcheck="false" />
+        <div class="psu-card-actions keyku-admin-only" hidden>
+          <button id="new-key" class="psu-button psu-button--filled" type="button">
+            <svg><use href="#psu-icon-key"></use></svg>
+            Neuer Key
+          </button>
+        </div>
+      </section>
+
+      <section class="keyku-stat-grid" aria-label="Vault-Übersicht">
+        <article class="psu-card keyku-stat"><span>Frei</span><strong id="stat-free">0</strong></article>
+        <article class="psu-card keyku-stat"><span>Benutzt</span><strong id="stat-used">0</strong></article>
+        <article class="psu-card keyku-stat"><span>Gesamt</span><strong id="stat-total">0</strong></article>
+      </section>
+
+      <section class="psu-card keyku-vault-card">
+        <div class="keyku-toolbar">
+          <label class="psu-field keyku-search-field">
+            <span class="psu-visually-hidden">Suche</span>
+            <input id="search" class="psu-search-field" type="search" placeholder="Spiel suchen" autocomplete="off" />
           </label>
-          <div class="segmented" role="tablist" aria-label="Status filter">
-            <button class="seg-btn" type="button" data-filter="all">All <span data-count="all">0</span></button>
-            <button class="seg-btn is-active" type="button" data-filter="available">Free <span data-count="available">0</span></button>
-            <button class="seg-btn" type="button" data-filter="claimed">Used <span data-count="claimed">0</span></button>
+          <div class="psu-segmented-control" role="tablist" aria-label="Statusfilter">
+            <button type="button" data-filter="all">Alle</button>
+            <button type="button" data-filter="available" aria-selected="true">Frei</button>
+            <button type="button" data-filter="claimed">Benutzt</button>
           </div>
-          <select id="sort" class="select" aria-label="Sort">
+          <select id="sort" class="psu-input keyku-select" aria-label="Sortierung">
             <option value="name-asc">Name A-Z</option>
             <option value="name-desc">Name Z-A</option>
-            <option value="added-desc">Newest first</option>
-            <option value="status-available">Free first</option>
-            <option value="status-claimed">Used first</option>
+            <option value="added-desc">Neueste zuerst</option>
+            <option value="status-available">Freie zuerst</option>
+            <option value="status-claimed">Benutzte zuerst</option>
           </select>
         </div>
-      </div>
+        <ul id="rows" class="keyku-key-list" aria-live="polite">
+          <li class="keyku-empty">Lade Vault...</li>
+        </ul>
+      </section>
+    </main>
+  </div>
 
-      <div class="table-head" aria-hidden="true">
-        <span>#</span>
-        <span>Game</span>
-        <span>Key</span>
-        <span>Status</span>
+  <div class="psu-backdrop" id="profile-sheet" hidden>
+    <section class="psu-center-sheet" role="dialog" aria-modal="true" aria-labelledby="profile-title">
+      <header class="psu-sheet-header">
+        <button class="psu-icon-button" type="button" aria-label="Profilmenü schließen" data-psu-close><svg><use href="#psu-icon-close"></use></svg></button>
+        <h2 id="profile-title" class="psu-sheet-title">Profil</h2>
         <span></span>
+      </header>
+      <div class="psu-account-card">
+        <div id="profile-avatar" class="psu-account-avatar">K</div>
+        <div>
+          <p id="profile-name" class="psu-account-name">Keyku</p>
+          <p id="profile-id" class="psu-account-id">Lokales Konto</p>
+        </div>
       </div>
-      <ul id="rows" class="rows">
-        <li class="placeholder">Loading vault...</li>
-      </ul>
+      <div class="psu-list">
+        <button class="psu-list-row" type="button" data-psu-open="#settings-sheet"><svg class="psu-list-row__icon"><use href="#psu-icon-settings"></use></svg><span class="psu-list-row__label">Einstellungen</span><span></span></button>
+        <button id="profile-notifications-row" class="psu-list-row keyku-admin-only" type="button" data-psu-open="#notifications-sheet" hidden><svg class="psu-list-row__icon"><use href="#psu-icon-info"></use></svg><span class="psu-list-row__label">Benachrichtigungen</span><span></span></button>
+        <button id="logout" class="psu-list-row" type="button"><svg class="psu-list-row__icon"><use href="#psu-icon-logout"></use></svg><span class="psu-list-row__label">Abmelden</span><span></span></button>
+      </div>
     </section>
   </div>
 
-  <section id="admin-panel" class="modal" hidden>
-    <div class="modal-backdrop" data-modal-close></div>
-    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="admin-title">
-      <div class="modal-head">
-        <div>
-          <p class="kicker">Admin</p>
-          <h2 id="admin-title">Notifications</h2>
-        </div>
-        <button class="icon-button" type="button" data-modal-close aria-label="Close" title="Close">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div id="admin-users" class="admin-users"></div>
-    </div>
-  </section>
+  <div class="psu-backdrop" id="settings-sheet" hidden>
+    <section class="psu-center-sheet keyku-wide-sheet" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <header class="psu-sheet-header">
+        <button class="psu-icon-button" type="button" aria-label="Einstellungen schließen" data-psu-close><svg><use href="#psu-icon-close"></use></svg></button>
+        <h2 id="settings-title" class="psu-sheet-title">Einstellungen</h2>
+        <span></span>
+      </header>
+      <div id="settings-body" class="keyku-sheet-body"></div>
+    </section>
+  </div>
 
-  <section id="settings-panel" class="modal" hidden>
-    <div class="modal-backdrop" data-settings-close></div>
-    <div class="modal-card settings-card" role="dialog" aria-modal="true" aria-labelledby="settings-title">
-      <div class="modal-head">
-        <div>
-          <p class="kicker">Admin</p>
-          <h2 id="settings-title">Settings</h2>
-        </div>
-        <button class="icon-button" type="button" data-settings-close aria-label="Close" title="Close">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div id="settings-body" class="settings-body"></div>
-    </div>
-  </section>
+  <div class="psu-backdrop" id="notifications-sheet" hidden>
+    <section class="psu-center-sheet keyku-wide-sheet" role="dialog" aria-modal="true" aria-labelledby="notifications-title">
+      <header class="psu-sheet-header">
+        <button class="psu-icon-button" type="button" aria-label="Benachrichtigungen schließen" data-psu-close><svg><use href="#psu-icon-close"></use></svg></button>
+        <h2 id="notifications-title" class="psu-sheet-title">Benachrichtigungen</h2>
+        <span></span>
+      </header>
+      <div id="notifications-body" class="keyku-sheet-body"></div>
+    </section>
+  </div>
 
-  <section id="detail-panel" class="detail-popover" hidden>
-    <div class="modal-backdrop" data-detail-close></div>
-    <div class="detail-card" role="dialog" aria-modal="true" aria-labelledby="detail-title">
-      <div class="detail-head">
-        <div>
-          <p id="detail-status" class="kicker">Key</p>
-          <h2 id="detail-title">Entry</h2>
-        </div>
-        <button class="icon-button" type="button" data-detail-close aria-label="Close" title="Close">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18"/><path d="M6 6l12 12"/></svg>
-        </button>
-      </div>
-
-      <form id="key-form" class="key-form">
-        <label>
-          <span>Game</span>
-          <input id="detail-game" name="game" type="text" maxlength="180" required />
+  <div class="psu-backdrop" id="detail-dialog" hidden>
+    <section class="psu-center-sheet keyku-wide-sheet" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+      <header class="psu-sheet-header">
+        <button class="psu-icon-button" type="button" aria-label="Key-Details schließen" data-psu-close><svg><use href="#psu-icon-close"></use></svg></button>
+        <h2 id="detail-title" class="psu-sheet-title">Key</h2>
+        <span></span>
+      </header>
+      <form id="key-form" class="keyku-sheet-body keyku-form-grid">
+        <label class="psu-field">
+          <span class="psu-label">Spiel</span>
+          <input id="detail-game" class="psu-input" name="game" maxlength="180" required />
         </label>
-        <label>
-          <span>Key</span>
-          <div class="key-input-row">
-            <input id="detail-key" name="key" type="password" maxlength="140" required />
-            <button id="detail-reveal" class="btn btn-muted" type="button">Reveal</button>
-          </div>
+        <label class="psu-field">
+          <span class="psu-label">Key</span>
+          <span class="keyku-inline-field">
+            <input id="detail-key" class="psu-input keyku-mono" name="key" type="password" maxlength="140" required />
+            <button id="detail-reveal" class="psu-button psu-button--tonal" type="button">Anzeigen</button>
+          </span>
         </label>
-        <label class="admin-only-field">
-          <span>Added</span>
-          <input id="detail-added" name="addedAt" type="datetime-local" />
+        <label class="psu-field keyku-admin-field">
+          <span class="psu-label">Hinzugefügt</span>
+          <input id="detail-added" class="psu-input" name="addedAt" type="datetime-local" />
         </label>
-        <label class="admin-only-field">
-          <span>Redeemed</span>
-          <input id="detail-redeemed" name="redeemedAt" type="datetime-local" />
+        <label class="psu-field keyku-admin-field">
+          <span class="psu-label">Eingelöst</span>
+          <input id="detail-redeemed" class="psu-input" name="redeemedAt" type="datetime-local" />
         </label>
-        <label class="admin-only-field">
-          <span>Redeemed by</span>
-          <input id="detail-redeemed-by" name="redeemedBy" type="text" readonly />
+        <label class="psu-field keyku-admin-field">
+          <span class="psu-label">Eingelöst von</span>
+          <input id="detail-redeemed-by" class="psu-input" readonly />
         </label>
-
-        <div class="detail-actions">
-          <button id="detail-redeem" class="btn btn-primary" type="button">Redeem</button>
-          <button id="detail-share" class="btn btn-muted" type="button">Share</button>
-          <button id="detail-copy" class="btn btn-muted" type="button">Copy</button>
-          <button id="detail-request-reactivation" class="btn btn-muted" type="button">Request reactivation</button>
-          <a id="detail-steam" class="btn btn-muted" target="_blank" rel="noopener noreferrer">Steam</a>
-          <a id="detail-steamdb" class="btn btn-muted" target="_blank" rel="noopener noreferrer">SteamDB</a>
+        <div id="share-link-row" class="keyku-inline-field" hidden>
+          <input id="detail-share-link" class="psu-input keyku-mono" type="text" readonly aria-label="Share-Link" />
+          <button id="detail-share-copy" class="psu-button psu-button--filled" type="button">Kopieren</button>
         </div>
-
-        <div id="share-link-row" class="share-link-row" hidden>
-          <input id="detail-share-link" type="text" readonly aria-label="Share link" />
-          <button id="detail-share-copy" class="btn btn-primary" type="button">Copy Link</button>
+        <div class="psu-card-actions">
+          <button id="detail-redeem" class="psu-button psu-button--filled" type="button">Einlösen</button>
+          <button id="detail-share" class="psu-button psu-button--tonal" type="button">Teilen</button>
+          <button id="detail-copy" class="psu-button psu-button--tonal" type="button">Key kopieren</button>
+          <button id="detail-request-reactivation" class="psu-button psu-button--outlined" type="button">Reaktivierung anfragen</button>
+          <a id="detail-steam" class="psu-button psu-button--outlined" target="_blank" rel="noopener noreferrer">Steam</a>
+          <a id="detail-steamdb" class="psu-button psu-button--outlined" target="_blank" rel="noopener noreferrer">SteamDB</a>
         </div>
-
-        <div class="admin-edit-actions">
-          <button id="detail-save" class="btn btn-primary" type="submit">Save</button>
-          <button id="detail-unredeem" class="btn btn-muted" type="button">Reactivate</button>
-          <button id="detail-delete" class="btn btn-danger" type="button">Delete</button>
+        <div class="psu-card-actions keyku-admin-field">
+          <button id="detail-save" class="psu-button psu-button--filled" type="submit">Speichern</button>
+          <button id="detail-unredeem" class="psu-button psu-button--tonal" type="button">Reaktivieren</button>
+          <button id="detail-delete" class="psu-button psu-button--danger" type="button">Löschen</button>
         </div>
       </form>
-    </div>
-  </section>
+    </section>
+  </div>
 
-  <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="/script.js?v=20260620-4"></script>
+  <div class="psu-backdrop" id="confirm-dialog" hidden>
+    <section class="psu-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <h2 id="confirm-title" class="psu-card-title">Bestätigen</h2>
+      <p id="confirm-message" class="psu-card-text">Aktion ausführen?</p>
+      <div class="psu-card-actions keyku-dialog-actions">
+        <button id="confirm-cancel" class="psu-button psu-button--tonal" type="button">Abbrechen</button>
+        <button id="confirm-ok" class="psu-button psu-button--danger" type="button">Ausführen</button>
+      </div>
+    </section>
+  </div>
+
+  <div id="toast" class="keyku-toast" role="status" aria-live="polite"></div>
+
+  <script type="application/json" data-psu-app-config>{"app_id":"keyku","app_name":"Keyku - Key Vault","app_subtitle":"Steam-Keys sicher teilen","app_symbol":"key","primary_purpose":"Keyku verwaltet Steam-Keys in einem selbst gehosteten Vault.","main_sections":["vault"],"app_logo":{"src":"/assets/logos/keyku.png","favicon":"/favicon.png","pwa_icon_512":"/icon-512.png","alt":"","use_as_header_symbol":true,"use_as_favicon":true,"use_as_pwa_icon":true,"use_as_about_symbol":true,"use_as_profile_sheet_symbol":true,"use_as_empty_state_symbol":true},"first_run_setup":{"enabled":true,"route":"/setup","require_setup_secret":true,"setup_secret_file_env":"ISHIKU_SETUP_SECRET_FILE","setup_secret_env":"ISHIKU_SETUP_SECRET","setup_secret_file_default":"/run/secrets/ishiku_setup_secret","public_registration_after_first_admin":false,"admin_password_must_differ_from_setup_secret":true,"minimum_admin_password_length":12},"default_theme":"lavender","default_mode":"system","has_account":true,"navigation_complexity":"single_view"}</script>
+  <script type="module" src="/script.js"></script>
 </body>
 </html>

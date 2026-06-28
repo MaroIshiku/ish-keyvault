@@ -1,7 +1,10 @@
 nodejs
-data/*.json
-data/session-secret.txt
+data
+secrets
+.env
+*.log
 __pycache__
 *.pyc
+.pytest_cache
 .git
 .gitignore

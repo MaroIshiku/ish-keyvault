@@ -15,22 +15,33 @@ from flask import Flask, jsonify, make_response, request, send_from_directory
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 
+APP_ID = "keyku"
+APP_NAME = "Keyku - Key Vault"
+APP_SUBTITLE = "Steam-Keys sicher teilen"
 PORT = int(os.environ.get("PORT", "3000"))
-CSV_PATH = Path(os.environ.get("CSV_PATH", "/app/data/keys.csv"))
-DATA_DIR = CSV_PATH.parent
+DATA_DIR = Path(os.environ.get("ISHIKU_DATA_DIR", os.environ.get("DATA_DIR", "/data")))
+CSV_PATH = Path(os.environ.get("CSV_PATH", str(DATA_DIR / "keys.csv")))
+DATA_DIR = CSV_PATH.parent if "CSV_PATH" in os.environ else DATA_DIR
 USERS_PATH = Path(os.environ.get("USERS_PATH", str(DATA_DIR / "users.json")))
 REQUESTS_PATH = Path(os.environ.get("REACTIVATION_REQUESTS_PATH", str(DATA_DIR / "reactivation-requests.json")))
 PASSWORD_RESET_REQUESTS_PATH = Path(os.environ.get("PASSWORD_RESET_REQUESTS_PATH", str(DATA_DIR / "password-reset-requests.json")))
 SECRET_PATH = Path(os.environ.get("SESSION_SECRET_FILE", str(DATA_DIR / "session-secret.txt")))
 PUBLIC_DIR = Path(os.environ.get("PUBLIC_DIR", str(Path(__file__).resolve().parent.parent / "public")))
+SETUP_STATE_PATH = Path(os.environ.get("SETUP_STATE_PATH", str(DATA_DIR / "setup-state.json")))
+SETUP_SECRET_FILE_ENV = "ISHIKU_SETUP_SECRET_FILE"
+SETUP_SECRET_ENV = "ISHIKU_SETUP_SECRET"
+SETUP_SECRET_FILE_DEFAULT = "/run/secrets/ishiku_setup_secret"
+PLACEHOLDER_PASSWORDS = {"admin", "password", "passwort", "changeme", "change-me", "123456", "123456789", "ishiku"}
 
-SESSION_COOKIE = "steam_keys_session"
+SESSION_COOKIE = "keyku_session"
 SESSION_TTL_SECONDS = 14 * 24 * 60 * 60
 SESSION_TTL_MS = SESSION_TTL_SECONDS * 1000
 
 app = Flask(__name__, static_folder=None)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
+if str(os.environ.get("ISHIKU_TRUST_PROXY", "")).lower() in {"1", "true", "yes", "on"}:
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 file_lock = RLock()
+setup_attempts = {}
 
 
 def now_iso():
@@ -105,6 +116,8 @@ def public_user(user):
     return {
         "id": user.get("id"),
         "username": user.get("username"),
+        "displayName": user.get("displayName") or user.get("username"),
+        "email": user.get("email") or "",
         "role": user.get("role"),
         "status": user.get("status"),
         "createdAt": user.get("createdAt"),
@@ -116,19 +129,19 @@ def normalize_username(username):
     return str(username or "").strip().lower()
 
 
-def validate_password(password):
+def validate_password(password, min_length=10):
     clean = str(password or "")
-    if len(clean) < 10 or len(clean) > 200:
-        return "Password must be 10 to 200 characters."
+    if len(clean) < min_length or len(clean) > 200:
+        return f"Password must be {min_length} to 200 characters."
     return None
 
 
-def validate_credentials(username, password):
+def validate_credentials(username, password, min_password_length=10):
     clean_username = normalize_username(username)
     allowed = "abcdefghijklmnopqrstuvwxyz0123456789._-"
     if len(clean_username) < 3 or len(clean_username) > 32 or any(ch not in allowed for ch in clean_username):
         return "Username must be 3-32 characters and may contain a-z, 0-9, dot, underscore, and hyphen."
-    return validate_password(password)
+    return validate_password(password, min_password_length)
 
 
 def hash_password(password, salt=None, iterations=310000):
@@ -170,6 +183,110 @@ def read_password_reset_requests():
 
 def write_password_reset_requests(data):
     write_json(PASSWORD_RESET_REQUESTS_PATH, data)
+
+
+def read_setup_state():
+    data = read_json(SETUP_STATE_PATH, {"setupCompleted": False})
+    return data if isinstance(data, dict) else {"setupCompleted": False}
+
+
+def write_setup_state(data):
+    write_json(SETUP_STATE_PATH, data)
+
+
+def admin_exists(users=None):
+    users = users if users is not None else read_users()["users"]
+    return any(user.get("role") == "admin" and user.get("status") == "approved" for user in users)
+
+
+def setup_completed():
+    users = read_users()["users"]
+    state = read_setup_state()
+    completed = bool(state.get("setupCompleted")) and admin_exists(users)
+    if admin_exists(users) and not state.get("setupCompleted"):
+        write_setup_state({"setupCompleted": True, "completedAt": now_iso(), "migrated": True})
+        completed = True
+    return completed
+
+
+def read_setup_secret():
+    configured_file = os.environ.get(SETUP_SECRET_FILE_ENV)
+    file_path = Path(configured_file or SETUP_SECRET_FILE_DEFAULT)
+    file_was_explicit = bool(configured_file)
+
+    if file_path.exists():
+        try:
+            secret = file_path.read_text(encoding="utf-8").strip()
+        except OSError:
+            return {"ok": False, "secret": "", "errorKey": SETUP_SECRET_FILE_ENV, "message": f"{SETUP_SECRET_FILE_ENV} is unreadable."}
+        if secret:
+            return {"ok": True, "secret": secret, "source": "file"}
+        return {"ok": False, "secret": "", "errorKey": SETUP_SECRET_FILE_ENV, "message": f"{SETUP_SECRET_FILE_ENV} is empty."}
+
+    if file_was_explicit:
+        return {"ok": False, "secret": "", "errorKey": SETUP_SECRET_FILE_ENV, "message": f"{SETUP_SECRET_FILE_ENV} is configured but missing."}
+
+    env_secret = os.environ.get(SETUP_SECRET_ENV, "").strip()
+    if env_secret:
+        return {"ok": True, "secret": env_secret, "source": "env"}
+
+    return {"ok": False, "secret": "", "errorKey": SETUP_SECRET_ENV, "message": f"{SETUP_SECRET_ENV} or {SETUP_SECRET_FILE_ENV} is required."}
+
+
+def setup_status_payload():
+    completed = setup_completed()
+    if completed:
+        return {"setupRequired": False, "setupCompleted": True, "setupConfigured": True}
+    secret = read_setup_secret()
+    return {
+        "setupRequired": True,
+        "setupCompleted": False,
+        "setupConfigured": bool(secret.get("ok")),
+        "errorKey": None if secret.get("ok") else secret.get("errorKey"),
+        "message": None if secret.get("ok") else "Setup-Secret ist nicht konfiguriert.",
+    }
+
+
+def setup_rate_limited(remote_addr):
+    now = datetime.now().timestamp()
+    key = remote_addr or "unknown"
+    attempts = [stamp for stamp in setup_attempts.get(key, []) if now - stamp < 15 * 60]
+    setup_attempts[key] = attempts
+    return len(attempts) >= 8
+
+
+def record_failed_setup_attempt(remote_addr):
+    key = remote_addr or "unknown"
+    setup_attempts.setdefault(key, []).append(datetime.now().timestamp())
+
+
+def validate_setup_admin(data, configured_secret):
+    username = normalize_username(data.get("adminUsername") or data.get("username"))
+    display_name = str(data.get("displayName") or data.get("adminDisplayName") or "").strip()
+    email = str(data.get("email") or "").strip()
+    password = str(data.get("password") or "")
+    confirm = str(data.get("passwordConfirm") or "")
+    secret = str(data.get("setupSecret") or "")
+
+    credential_error = validate_credentials(username, password, min_password_length=12)
+    if credential_error:
+        return credential_error
+    if not display_name or len(display_name) > 80:
+        return "Display name is required and must be at most 80 characters."
+    if len(email) > 180:
+        return "Email address is too long."
+    if password != confirm:
+        return "Password confirmation does not match."
+    if not secret.strip() or not safe_equal(secret, configured_secret):
+        return "Setup secret is incorrect."
+    if safe_equal(password, configured_secret):
+        return "Admin password must not match the setup secret."
+    normalized_password = password.strip().lower()
+    if normalized_password in PLACEHOLDER_PASSWORDS:
+        return "Please choose a stronger admin password."
+    if normalized_password in {username, APP_ID, APP_NAME.lower()}:
+        return "Admin password must not match the username or app name."
+    return None
 
 
 def cookie_secure():
@@ -335,7 +452,7 @@ def key_fingerprint(key):
 
 
 def public_base_url():
-    configured = (os.environ.get("PUBLIC_BASE_URL") or os.environ.get("APP_BASE_URL") or "").strip().rstrip("/")
+    configured = (os.environ.get("ISHIKU_APP_URL") or os.environ.get("PUBLIC_BASE_URL") or os.environ.get("APP_BASE_URL") or "").strip().rstrip("/")
     if configured:
         return configured
     proto = request.headers.get("X-Forwarded-Proto") or request.scheme
@@ -406,11 +523,90 @@ def security_headers(response):
     return response
 
 
+@app.get("/healthz")
+def healthz():
+    return jsonify({"ok": True, "app": APP_ID})
+
+
+@app.get("/readyz")
+def readyz():
+    payload = {"ok": True, "app": APP_ID, "dataWritable": True, "setup": setup_status_payload()}
+    try:
+        ensure_dir(DATA_DIR)
+        test_path = DATA_DIR / ".readyz"
+        test_path.write_text(now_iso(), encoding="utf-8")
+        test_path.unlink(missing_ok=True)
+    except Exception:
+        payload["ok"] = False
+        payload["dataWritable"] = False
+        return jsonify(payload), 503
+    if payload["setup"].get("setupRequired") and not payload["setup"].get("setupConfigured"):
+        payload["ok"] = False
+        return jsonify(payload), 503
+    return jsonify(payload)
+
+
+@app.get("/api/setup/status")
+def api_setup_status():
+    return jsonify(setup_status_payload())
+
+
+@app.post("/api/setup/register-admin")
+def api_setup_register_admin():
+    if setup_completed():
+        return jsonify({"error": "Setup is already complete."}), 409
+    if setup_rate_limited(request.remote_addr):
+        return jsonify({"error": "Too many setup attempts. Please wait before trying again."}), 429
+
+    secret_state = read_setup_secret()
+    if not secret_state.get("ok"):
+        return jsonify({"error": "Setup secret is not configured.", "errorKey": secret_state.get("errorKey")}), 503
+
+    body = json_body()
+    error = validate_setup_admin(body, secret_state["secret"])
+    if error:
+        record_failed_setup_attempt(request.remote_addr)
+        return jsonify({"error": error}), 400
+
+    username = normalize_username(body.get("adminUsername") or body.get("username"))
+    with file_lock:
+        data = read_users()
+        if admin_exists(data["users"]):
+            return jsonify({"error": "Setup is already complete."}), 409
+        if any(user.get("username") == username for user in data["users"]):
+            return jsonify({"error": "This username is already taken."}), 409
+        hashed = hash_password(body.get("password"))
+        created = now_iso()
+        user = {
+            "id": secrets.token_urlsafe(24),
+            "username": username,
+            "displayName": str(body.get("displayName") or body.get("adminDisplayName") or username).strip(),
+            "email": str(body.get("email") or "").strip(),
+            "passwordHash": hashed["hash"],
+            "salt": hashed["salt"],
+            "iterations": hashed["iterations"],
+            "role": "admin",
+            "status": "approved",
+            "createdAt": created,
+            "approvedAt": created,
+            "approvedBy": "setup",
+        }
+        data["users"].append(user)
+        write_users(data)
+        write_setup_state({"setupCompleted": True, "completedAt": created})
+
+    response = make_response(jsonify({"ok": True, "user": public_user(user), "setupCompleted": True}), 201)
+    return set_session_cookie(response, user)
+
+
 @app.get("/api/auth/me")
 def auth_me():
+    setup_state = setup_status_payload()
+    if setup_state.get("setupRequired"):
+        return jsonify({"authenticated": False, **setup_state})
     user = current_user()
     if not user:
-        return jsonify({"authenticated": False})
+        return jsonify({"authenticated": False, **setup_state})
     users = read_users()["users"]
     pending_users = sum(1 for candidate in users if candidate.get("status") == "pending")
     pending_reactivations = sum(1 for req in read_reactivation_requests()["requests"] if req.get("status") == "pending")
@@ -421,41 +617,7 @@ def auth_me():
 
 @app.post("/api/auth/register")
 def auth_register():
-    body = json_body()
-    error = validate_credentials(body.get("username"), body.get("password"))
-    if error:
-        return jsonify({"error": error}), 400
-    username = normalize_username(body.get("username"))
-    with file_lock:
-        data = read_users()
-        if any(user.get("username") == username for user in data["users"]):
-            return jsonify({"error": "This username is already taken."}), 409
-        first_user = len(data["users"]) == 0
-        hashed = hash_password(body.get("password"))
-        created = now_iso()
-        user = {
-            "id": secrets.token_urlsafe(24),
-            "username": username,
-            "passwordHash": hashed["hash"],
-            "salt": hashed["salt"],
-            "iterations": hashed["iterations"],
-            "role": "admin" if first_user else "user",
-            "status": "approved" if first_user else "pending",
-            "createdAt": created,
-            "approvedAt": created if first_user else None,
-            "approvedBy": "bootstrap" if first_user else None,
-        }
-        data["users"].append(user)
-        write_users(data)
-    response = make_response(jsonify({
-        "ok": True,
-        "authenticated": first_user,
-        "message": "Admin account created. Future registrations must be approved." if first_user else "Registration saved. An admin must approve access.",
-        "user": public_user(user),
-    }), 201 if first_user else 202)
-    if first_user:
-        set_session_cookie(response, user)
-    return response
+    return jsonify({"error": "Public registration is closed. Ask an admin to create an account."}), 410
 
 
 @app.post("/api/auth/login")
@@ -539,6 +701,36 @@ def admin_settings():
     if error:
         return error
     return jsonify(admin_settings_summary())
+
+
+@app.get("/api/admin/info")
+def admin_info():
+    admin, error = require_admin()
+    if error:
+        return error
+    setup_state = setup_status_payload()
+    return jsonify({
+        "app": {
+            "id": APP_ID,
+            "name": APP_NAME,
+            "subtitle": APP_SUBTITLE,
+            "version": os.environ.get("APP_VERSION", "local"),
+            "buildDate": os.environ.get("APP_BUILD_DATE", ""),
+            "gitSha": os.environ.get("GITHUB_SHA", ""),
+        },
+        "runtime": {
+            "dataDir": str(DATA_DIR),
+            "csvPath": str(CSV_PATH),
+            "publicDir": str(PUBLIC_DIR),
+            "logLevel": os.environ.get("ISHIKU_LOG_LEVEL", "info"),
+            "trustProxy": str(os.environ.get("ISHIKU_TRUST_PROXY", "false")),
+        },
+        "health": {
+            "status": "ready" if setup_state.get("setupConfigured") or setup_state.get("setupCompleted") else "setup_unconfigured",
+            "setup": setup_state,
+            "database": "file-json-csv",
+        },
+    })
 
 
 @app.post("/api/admin/maintenance/delete-used-keys")
@@ -627,6 +819,60 @@ def admin_user_reject(user_id):
         user["rejectedBy"] = admin["id"]
         write_users(data)
     return jsonify({"ok": True, "user": public_user(user)})
+
+
+@app.get("/api/admin/users")
+def admin_users_list():
+    admin, error = require_admin()
+    if error:
+        return error
+    users = sorted([public_user(user) for user in read_users()["users"]], key=lambda item: str(item.get("username")))
+    return jsonify({"users": users})
+
+
+@app.post("/api/admin/users")
+def admin_user_create():
+    admin, error = require_admin()
+    if error:
+        return error
+    body = json_body()
+    username = normalize_username(body.get("username"))
+    password = str(body.get("password") or "")
+    credential_error = validate_credentials(username, password, min_password_length=12)
+    if credential_error:
+        return jsonify({"error": credential_error}), 400
+    display_name = str(body.get("displayName") or username).strip()
+    email = str(body.get("email") or "").strip()
+    role = "admin" if body.get("role") == "admin" else "user"
+    if not display_name or len(display_name) > 80:
+        return jsonify({"error": "Display name is required and must be at most 80 characters."}), 400
+    if len(email) > 180:
+        return jsonify({"error": "Email address is too long."}), 400
+    if password.strip().lower() in PLACEHOLDER_PASSWORDS or password.strip().lower() in {username, APP_ID, APP_NAME.lower()}:
+        return jsonify({"error": "Please choose a stronger password."}), 400
+    with file_lock:
+        data = read_users()
+        if any(user.get("username") == username for user in data["users"]):
+            return jsonify({"error": "This username is already taken."}), 409
+        hashed = hash_password(password)
+        created = now_iso()
+        user = {
+            "id": secrets.token_urlsafe(24),
+            "username": username,
+            "displayName": display_name,
+            "email": email,
+            "passwordHash": hashed["hash"],
+            "salt": hashed["salt"],
+            "iterations": hashed["iterations"],
+            "role": role,
+            "status": "approved",
+            "createdAt": created,
+            "approvedAt": created,
+            "approvedBy": admin["id"],
+        }
+        data["users"].append(user)
+        write_users(data)
+    return jsonify({"ok": True, "user": public_user(user)}), 201
 
 
 def set_user_password(user, password, admin_id):
@@ -921,6 +1167,21 @@ def index():
     return send_public("index.html")
 
 
+@app.get("/login")
+def login_page():
+    return send_public("index.html")
+
+
+@app.get("/setup")
+def setup_page():
+    return send_public("index.html")
+
+
+@app.get("/admin")
+def admin_page():
+    return send_public("index.html")
+
+
 @app.get("/share/<token>")
 def share_page(token):
     return send_public("share.html")
@@ -940,13 +1201,15 @@ def init_storage():
             write_reactivation_requests({"requests": []})
         if not PASSWORD_RESET_REQUESTS_PATH.exists():
             write_password_reset_requests({"requests": []})
+        if not SETUP_STATE_PATH.exists():
+            write_setup_state({"setupCompleted": admin_exists(read_users()["users"]), "createdAt": now_iso()})
 
 
 init_storage()
 
 
 if __name__ == "__main__":
-    print(f"Steam Key Vault Python running on http://0.0.0.0:{PORT}")
+    print(f"{APP_NAME} Python running on http://0.0.0.0:{PORT}")
     print(f"CSV: {CSV_PATH}")
     print(f"Users: {USERS_PATH}")
     print(f"Public: {PUBLIC_DIR}")

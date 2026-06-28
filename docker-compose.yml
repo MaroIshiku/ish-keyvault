@@ -1,10 +1,10 @@
-# ZimaOS optimized compose.
-# No local build, no relative bind paths: ZimaOS only pulls GHCR and stores data below /DATA/AppData.
+# ZimaOS optimized compose for Keyku.
+# Uses the prebuilt GHCR image and stores persistent data below /DATA/AppData/keyku.
 
 services:
-  ish-keyvault:
-    image: ghcr.io/maroishiku/ish-keyvault:latest
-    container_name: ish-keyvault
+  keyku:
+    image: ghcr.io/maroishiku/keyku:latest
+    container_name: keyku
     restart: unless-stopped
     pull_policy: always
     init: true
@@ -13,22 +13,24 @@ services:
       - "8080:3000"
 
     volumes:
-      - /DATA/AppData/ish-keyvault/data:/app/data
+      - /DATA/AppData/keyku/data:/data
+
+    secrets:
+      - ishiku_setup_secret
 
     environment:
-      - CSV_PATH=/app/data/keys.csv
-      - USERS_PATH=/app/data/users.json
-      - REACTIVATION_REQUESTS_PATH=/app/data/reactivation-requests.json
-      - PASSWORD_RESET_REQUESTS_PATH=/app/data/password-reset-requests.json
-      - SESSION_SECRET_FILE=/app/data/session-secret.txt
-      - PUBLIC_DIR=/app/public
-      # Optional: set to your external HTTPS URL so generated share links use the public host.
-      # Example: https://keys.example.com
-      - PUBLIC_BASE_URL=
+      - TZ=Europe/Berlin
+      - ISHIKU_APP_URL=
+      - ISHIKU_BASE_PATH=/
+      - ISHIKU_DATA_DIR=/data
+      - ISHIKU_LOG_LEVEL=info
+      - ISHIKU_TRUST_PROXY=false
+      - ISHIKU_SETUP_SECRET_FILE=/run/secrets/ishiku_setup_secret
       - PORT=3000
+      - PUBLIC_DIR=/app/public
 
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/api/auth/me', timeout=3).read()"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/healthz', timeout=3).read()"]
       interval: 30s
       timeout: 5s
       retries: 5
@@ -39,3 +41,7 @@ services:
       options:
         max-size: "5m"
         max-file: "3"
+
+secrets:
+  ishiku_setup_secret:
+    file: /DATA/AppData/keyku/secrets/setup_secret.txt

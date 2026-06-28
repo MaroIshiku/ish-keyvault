@@ -35,5 +35,5 @@ jobs:
           file: python/Dockerfile
           push: true
           tags: |
-            ghcr.io/maroishiku/ish-keyvault:latest
-            ghcr.io/maroishiku/ish-keyvault:${{ github.sha }}
+            ghcr.io/maroishiku/keyku:latest
+            ghcr.io/maroishiku/keyku:${{ github.sha }}

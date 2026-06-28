@@ -1,6 +1,7 @@
+import { initPixelSoftUtilityTheme } from "./design-system/theme-controller.js";
+
 const token = decodeURIComponent(window.location.pathname.split("/").filter(Boolean).pop() || "");
 const title = document.querySelector("#share-title");
-const statusText = document.querySelector("#share-status");
 const meta = document.querySelector("#share-meta");
 const keyBox = document.querySelector("#share-key");
 const copyButton = document.querySelector("#share-copy-key");
@@ -12,9 +13,21 @@ const toast = document.querySelector("#toast");
 
 let sharedKey = "";
 
+initPixelSoftUtilityTheme({ appId: "keyku", defaultTheme: "lavender", defaultMode: "system" });
+loadIconSprite();
+loadShare();
+
+async function loadIconSprite() {
+  try {
+    document.querySelector("#icon-sprite").innerHTML = await fetch("/icons/psu-icons.svg", { cache: "force-cache" }).then((response) => response.text());
+  } catch (_) {
+    document.querySelector("#icon-sprite").innerHTML = "";
+  }
+}
+
 function showToast(message, kind = "default") {
   toast.textContent = message;
-  toast.className = `toast is-visible ${kind === "error" ? "is-error" : ""} ${kind === "success" ? "is-success" : ""}`;
+  toast.className = `keyku-toast is-visible ${kind === "error" ? "is-error" : ""} ${kind === "success" ? "is-success" : ""}`;
   clearTimeout(showToast.timer);
   showToast.timer = setTimeout(() => toast.classList.remove("is-visible"), 3000);
 }
@@ -23,13 +36,13 @@ function formatDate(iso) {
   if (!iso) return "";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString("en-US", { day: "2-digit", month: "short", year: "numeric" });
+  return date.toLocaleDateString("de-DE", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 async function copy(text) {
   try {
     await navigator.clipboard.writeText(text);
-    showToast("Key copied", "success");
+    showToast("Key kopiert", "success");
   } catch (_) {
     showToast(text, "success");
   }
@@ -39,20 +52,20 @@ async function loadShare() {
   try {
     const response = await fetch(`/api/share/${encodeURIComponent(token)}`, { cache: "no-store" });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Share link not found");
+    if (!response.ok) throw new Error(data.error || "Share-Link nicht gefunden");
     sharedKey = data.key;
-    title.textContent = data.game || "Steam Key";
-    statusText.textContent = data.redeemed ? "Already used" : "Available";
+    title.textContent = data.game || "Steam-Key";
     meta.textContent = data.redeemed && data.redeemedAt
-      ? `Redeemed on ${formatDate(data.redeemedAt)}`
-      : "Public key link";
+      ? `Eingelöst am ${formatDate(data.redeemedAt)}`
+      : "Öffentlicher Key-Link";
     keyBox.textContent = data.key;
     redeemLink.href = data.redeemUrl;
     steamLink.href = data.steamUrl;
     steamDbLink.href = data.steamDbUrl;
   } catch (error) {
-    title.textContent = "Invalid share link";
-    keyBox.textContent = "Not found";
+    title.textContent = "Ungültiger Share-Link";
+    meta.textContent = "Keyku - Key Vault";
+    keyBox.textContent = "Nicht gefunden";
     errorBox.textContent = error.message;
     copyButton.disabled = true;
     [redeemLink, steamLink, steamDbLink].forEach((link) => {
@@ -65,5 +78,3 @@ async function loadShare() {
 copyButton.addEventListener("click", () => {
   if (sharedKey) copy(sharedKey);
 });
-
-loadShare();
