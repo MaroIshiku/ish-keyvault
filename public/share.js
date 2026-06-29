@@ -19,7 +19,7 @@ loadShare();
 
 async function loadIconSprite() {
   try {
-    document.querySelector("#icon-sprite").innerHTML = await fetch("/icons/psu-icons.svg", { cache: "force-cache" }).then((response) => response.text());
+    document.querySelector("#icon-sprite").innerHTML = await fetch("/icons/psu-icons.svg", { cache: "no-cache" }).then((response) => response.text());
   } catch (_) {
     document.querySelector("#icon-sprite").innerHTML = "";
   }

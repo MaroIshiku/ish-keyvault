@@ -97,7 +97,7 @@ const el = {
 async function loadIconSprite() {
   const host = $("#icon-sprite");
   try {
-    host.innerHTML = await fetch("/icons/psu-icons.svg", { cache: "force-cache" }).then((response) => response.text());
+    host.innerHTML = await fetch("/icons/psu-icons.svg", { cache: "no-cache" }).then((response) => response.text());
   } catch (_) {
     host.innerHTML = "";
   }
