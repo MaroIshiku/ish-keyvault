@@ -40,7 +40,7 @@
 
 .keyku-toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto minmax(180px, auto) auto;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(180px, auto);
   gap: var(--space-3);
   align-items: center;
   margin-block-end: var(--space-4);
@@ -52,10 +52,6 @@
 
 .keyku-select {
   min-inline-size: 180px;
-}
-
-.keyku-new-key-button {
-  white-space: nowrap;
 }
 
 .keyku-key-list {
@@ -203,19 +199,16 @@
   border-color: var(--color-danger);
 }
 
-.keyku-badge {
+.keyku-ping-led {
   position: absolute;
-  inset-block-start: -4px;
-  inset-inline-end: -4px;
-  min-inline-size: 20px;
-  block-size: 20px;
-  display: grid;
-  place-items: center;
+  inset-block-start: 4px;
+  inset-inline-end: 5px;
+  inline-size: 10px;
+  block-size: 10px;
   border-radius: var(--radius-pill);
-  background: var(--color-warning-container);
-  color: var(--color-on-warning-container);
-  font-size: var(--type-label-medium-size);
-  font-weight: 900;
+  background: var(--color-danger);
+  border: 2px solid var(--color-background);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger) 22%, transparent);
 }
 
 #notifications-button {
@@ -365,10 +358,6 @@ code {
   }
 
   .keyku-select {
-    inline-size: 100%;
-  }
-
-  .keyku-new-key-button {
     inline-size: 100%;
   }
 

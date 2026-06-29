@@ -275,7 +275,7 @@ function updateNotificationIndicator(count) {
   const value = Number(count || 0);
   const show = state.user?.role === "admin" && value > 0;
   el.notificationBadge.hidden = !show;
-  el.notificationBadge.textContent = String(value);
+  el.notificationsButton.setAttribute("aria-label", show ? `Open notifications, ${value} pending` : "Open notifications");
 }
 
 function setAuthMode(mode) {

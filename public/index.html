@@ -142,7 +142,10 @@
         <div class="psu-spacer"></div>
         <button id="notifications-button" class="psu-icon-button keyku-admin-only" type="button" aria-label="Open notifications" data-psu-open="#notifications-sheet" hidden>
           <svg><use href="#psu-icon-bell"></use></svg>
-          <span id="notification-badge" class="keyku-badge" hidden>0</span>
+          <span id="notification-badge" class="keyku-ping-led" hidden></span>
+        </button>
+        <button id="new-key" class="psu-icon-button keyku-admin-only" type="button" aria-label="Add key" hidden>
+          <svg><use href="#psu-icon-plus"></use></svg>
         </button>
         <button id="profile-button" class="psu-avatar-button" type="button" aria-label="Open profile menu" data-psu-open="#profile-sheet">K</button>
       </div>
@@ -173,10 +176,6 @@
             <option value="status-available">Free first</option>
             <option value="status-claimed">Used first</option>
           </select>
-          <button id="new-key" class="psu-button psu-button--filled keyku-admin-only keyku-new-key-button" type="button" hidden>
-            <svg><use href="#psu-icon-plus"></use></svg>
-            New key
-          </button>
         </div>
         <ul id="rows" class="keyku-key-list" aria-live="polite">
           <li class="keyku-empty">Loading vault...</li>

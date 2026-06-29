@@ -30,7 +30,10 @@ body {
 }
 
 #icon-sprite {
-  display: none;
+  position: absolute;
+  inline-size: 0;
+  block-size: 0;
+  overflow: hidden;
 }
 
 button, input, textarea, select { font: inherit; }
